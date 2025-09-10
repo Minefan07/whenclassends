@@ -491,7 +491,7 @@
                 statusElement.textContent = `Time remaining in:`;
                 periodNameElement.textContent = currentPeriod.name;
                 timerElement.textContent = formatDuration(timeUntilNext);
-                updateProgressBar(timeUntilNext, totalPeriodTime);
+                updateProgressBar(totalPeriodTime - timeUntilNext, totalPeriodTime);
             } else if (nextPeriod) {
                 if (currentTime < parseTime(todaySchedule.periods[0].start)) {
                     statusElement.textContent = `School starts in:`;
@@ -501,7 +501,7 @@
                     periodNameElement.textContent = nextPeriod.name;
                 }
                 timerElement.textContent = formatDuration(timeUntilNext);
-                updateProgressBar(timeUntilNext, totalPeriodTime);
+                updateProgressBar(totalPeriodTime - timeUntilNext, totalPeriodTime);
             } else {
                 // School is over for the day - show countdown to next school day
                 const timeUntilNextSchool = getTimeUntilNextSchoolDay();
