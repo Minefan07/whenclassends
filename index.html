@@ -490,7 +490,7 @@
             if (currentPeriod) {
                 statusElement.textContent = `Time remaining:`;
                 periodNameElement.textContent = currentPeriod.name;
-                timerElement.textContent = formatDuration(timeUntilNext) + "\n[" + (100 * ((totalPeriodTime - timeUntilNext)/totalPeriodTime)) + "% left]";
+                timerElement.textContent = formatDuration(timeUntilNext) + "\n<span class='percentLeft'>[" + Math.round(100 * ((totalPeriodTime - timeUntilNext)/totalPeriodTime)) + "% elapsed]</span>";
                 updateProgressBar(totalPeriodTime - timeUntilNext, totalPeriodTime);
             } else if (nextPeriod) {
                 if (currentTime < parseTime(todaySchedule.periods[0].start)) {
