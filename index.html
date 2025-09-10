@@ -488,9 +488,9 @@
 
             // Display the appropriate message and countdown
             if (currentPeriod) {
-                statusElement.textContent = `Time remaining in:`;
+                statusElement.textContent = `Time remaining:`;
                 periodNameElement.textContent = currentPeriod.name;
-                timerElement.textContent = formatDuration(timeUntilNext);
+                timerElement.textContent = formatDuration(timeUntilNext) + "\n[" + (100 * (totalPeriodTime - timeUntilNext)) + "% left]";
                 updateProgressBar(totalPeriodTime - timeUntilNext, totalPeriodTime);
             } else if (nextPeriod) {
                 if (currentTime < parseTime(todaySchedule.periods[0].start)) {
