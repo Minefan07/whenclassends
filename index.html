@@ -144,10 +144,10 @@
             font-weight: bold;
         }
 
-        .percent {
+        .percent-text {
             font-size: 1.0em;
             position: relative;
-            top: -100px;
+            top: -130px;
         }
     </style>
 </head>
@@ -162,7 +162,7 @@
                     <circle class="progress-ring progress" cx="150" cy="150" r="140" id="progressCircle"></circle>
                 </svg>
                 <div class="timer-text" id="timer">--:--:--</div>
-                <span class="percent">Loading...</span>
+                <span class="percent-text" id="percent">Loading...</span>
             </div>
             <div class="timer-display" id="periodName">Loading...</div>
         </div>
@@ -499,7 +499,9 @@
                 statusElement.textContent = `Time remaining:`;
                 periodNameElement.textContent = currentPeriod.name;
                 timerElement.textContent = formatDuration(timeUntilNext);
+                
                 percentElement.textContent = "[" + Math.round(100 * ((totalPeriodTime - timeUntilNext)/totalPeriodTime)) + "% elapsed]";
+                
                 updateProgressBar(totalPeriodTime - timeUntilNext, totalPeriodTime);
             } else if (nextPeriod) {
                 if (currentTime < parseTime(todaySchedule.periods[0].start)) {
