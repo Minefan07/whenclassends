@@ -1,14 +1,539 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>When does class end?</title>
-  </head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Schedule Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 30px 0;
+        }
+
+        .circular-progress {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .circular-progress svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring {
+            fill: none;
+            stroke-width: 8;
+        }
+
+        .progress-ring.background {
+            stroke: #e2e8f0;
+        }
+
+        .progress-ring.progress {
+            stroke: #667eea;
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.5s ease;
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        .timer-display {
+            background: #2d3748;
+            color: #fff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.8em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            min-width: 200px;
+        }
+
+        .status {
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: #4a5568;
+        }
+
+        .period-info {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #667eea;
+            overflow: none;
+        }
+
+        .period-info h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .schedule-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: none;
+        }
+
+        .schedule-item {
+            padding: 5px 0;
+        }
+
+        .current-period {
+            background: #fed7d7;
+            padding: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .next-period {
+            background: #d6f5d6;
+            padding: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
 <body>
-  <script>
-    function determineTimeLeft() {
-      var d = new Date().getDay();
-    }
-  </script>
-  <div><span id="period" /> ends in <span id="timeLeft" /> minutes.</div>
+    <div class="container">
+        <h1>School Schedule Timer</h1>
+        <div class="status" id="status">Loading...</div>
+        <div class="timer-container">
+            <div class="circular-progress">
+                <svg>
+                    <circle class="progress-ring background" cx="150" cy="150" r="140"></circle>
+                    <circle class="progress-ring progress" cx="150" cy="150" r="140" id="progressCircle"></circle>
+                </svg>
+                <div class="timer-text" id="timer">--:--:--</div>
+            </div>
+            <div class="timer-display" id="periodName">Loading...</div>
+        </div>
+        <div class="period-info" id="periodInfo">
+            <h3 id="dayTitle">Today's Schedule</h3>
+            <div class="schedule-grid" id="scheduleGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        // School schedule data
+        const schedules = {
+            monday: {
+                name: "Monday - Early Out",
+                periods: [
+                    { name: "Period 1", start: "08:35", end: "09:21" },
+                    { name: "Period 2", start: "09:29", end: "10:15" },
+                    { name: "Period 3", start: "10:23", end: "11:09" },
+                    { name: "Period 4", start: "11:17", end: "12:03" },
+                    { name: "Lunch", start: "12:11", end: "12:41" },
+                    { name: "Period 5", start: "12:49", end: "13:35" },
+                    { name: "Period 6", start: "13:43", end: "14:29" },
+                    { name: "Period 7", start: "14:37", end: "15:23", optional: true }
+                ]
+            },
+            tuesday: {
+                name: "Tuesday",
+                periods: [
+                    { name: "Period 1", start: "08:35", end: "09:30" },
+                    { name: "Period 2", start: "09:38", end: "10:33" },
+                    { name: "Period 3", start: "10:41", end: "11:36" },
+                    { name: "Period 4", start: "11:44", end: "12:39" },
+                    { name: "Lunch", start: "12:47", end: "13:17" },
+                    { name: "Period 5", start: "13:25", end: "14:20" },
+                    { name: "Period 6", start: "14:28", end: "15:23" },
+                    { name: "Period 7", start: "15:31", end: "16:26", optional: true }
+                ]
+            },
+            wednesday: {
+                name: "Wednesday",
+                periods: [
+                    { name: "Period 1", start: "08:35", end: "10:23" },
+                    { name: "Advisory", start: "10:31", end: "10:53" },
+                    { name: "Period 3", start: "11:01", end: "12:49" },
+                    { name: "Lunch", start: "12:57", end: "13:27" },
+                    { name: "Period 5", start: "13:35", end: "15:23" },
+                    { name: "Period 7", start: "15:31", end: "16:26", optional: true }
+                ]
+            },
+            thursday: {
+                name: "Thursday",
+                periods: [
+                    { name: "Period 2", start: "08:35", end: "10:23" },
+                    { name: "Advisory", start: "10:31", end: "10:53" },
+                    { name: "Period 4", start: "11:01", end: "12:49" },
+                    { name: "Lunch", start: "12:57", end: "13:27" },
+                    { name: "Period 6", start: "13:35", end: "15:23" },
+                    { name: "Period 7", start: "15:31", end: "16:26", optional: true }
+                ]
+            },
+            friday: {
+                name: "Friday",
+                periods: [
+                    { name: "Period 1", start: "08:35", end: "09:30" },
+                    { name: "Period 2", start: "09:38", end: "10:33" },
+                    { name: "Period 3", start: "10:41", end: "11:36" },
+                    { name: "Period 4", start: "11:44", end: "12:39" },
+                    { name: "Lunch", start: "12:47", end: "13:17" },
+                    { name: "Period 5", start: "13:25", end: "14:20" },
+                    { name: "Period 6", start: "14:28", end: "15:23" },
+                    { name: "Period 7", start: "15:31", end: "16:26", optional: true }
+                ]
+            }
+        };
+
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        function formatTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+        }
+
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.getHours() * 60 + now.getMinutes();
+        }
+
+        function getCurrentDay() {
+            const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            return days[new Date().getDay()];
+        }
+
+        function getNextSchoolDay() {
+            const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const currentDay = new Date().getDay();
+            
+            // Find next school day (Monday-Friday)
+            for (let i = 1; i <= 7; i++) {
+                const nextDayIndex = (currentDay + i) % 7;
+                const nextDayName = days[nextDayIndex];
+                if (schedules[nextDayName]) {
+                    return { name: nextDayName, daysAhead: i };
+                }
+            }
+            return null;
+        }
+
+        function getTimeUntilNextSchoolDay() {
+            const nextSchoolDay = getNextSchoolDay();
+            if (!nextSchoolDay) return null;
+
+            const now = new Date();
+            const nextDay = new Date(now);
+            nextDay.setDate(now.getDate() + nextSchoolDay.daysAhead);
+            
+            // Set to 8:35 AM (start of first period)
+            nextDay.setHours(8, 35, 0, 0);
+            
+            const timeDiff = nextDay - now;
+            return Math.floor(timeDiff / 1000); // Return seconds
+        }
+
+        function getSchoolEndTime(day) {
+            if (!schedules[day] || !schedules[day].periods.length) return null;
+            
+            // Get the last period (including optional Period 7)
+            const lastPeriod = schedules[day].periods[schedules[day].periods.length - 1];
+            return parseTime(lastPeriod.end);
+        }
+
+        function getTimeSinceSchoolEnded() {
+            const currentDay = getCurrentDay();
+            const currentTime = getCurrentTime();
+            
+            // Check if today was a school day
+            if (!schedules[currentDay]) {
+                // If today wasn't a school day, check yesterday
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][yesterday.getDay()];
+                
+                if (schedules[yesterdayName]) {
+                    const schoolEndTime = getSchoolEndTime(yesterdayName);
+                    if (schoolEndTime) {
+                        const now = new Date();
+                        const yesterdayEnd = new Date(yesterday);
+                        yesterdayEnd.setHours(Math.floor(schoolEndTime / 60), schoolEndTime % 60, 0, 0);
+                        
+                        const timeDiff = now - yesterdayEnd;
+                        return Math.floor(timeDiff / 1000); // Return seconds since yesterday's school ended
+                    }
+                }
+                return null;
+            }
+            
+            // Today is a school day
+            const schoolEndTime = getSchoolEndTime(currentDay);
+            if (!schoolEndTime) return null;
+            
+            // If school hasn't ended yet, return null
+            if (currentTime < schoolEndTime) return null;
+            
+            // Calculate time since school ended today
+            const now = new Date();
+            const endTimeInSeconds = schoolEndTime * 60;
+            const currentTimeInSeconds = currentTime * 60 + now.getSeconds();
+            
+            return currentTimeInSeconds - endTimeInSeconds;
+        }
+
+        function updateScheduleDisplay(day, currentPeriod, nextPeriod) {
+            const dayTitle = document.getElementById('dayTitle');
+            const scheduleGrid = document.getElementById('scheduleGrid');
+            
+            if (!schedules[day]) {
+                dayTitle.textContent = 'No School Today';
+                scheduleGrid.innerHTML = '<div>Enjoy your day off!</div>';
+                return;
+            }
+
+            dayTitle.textContent = schedules[day].name;
+            scheduleGrid.innerHTML = '';
+
+            schedules[day].periods.forEach((period, index) => {
+                const periodName = document.createElement('div');
+                const periodTime = document.createElement('div');
+                
+                periodName.textContent = period.name + (period.optional ? '*' : '');
+                periodTime.textContent = `${period.start} - ${period.end}`;
+                
+                periodName.className = 'schedule-item';
+                periodTime.className = 'schedule-item';
+                
+                if (currentPeriod && currentPeriod.name === period.name) {
+                    periodName.classList.add('current-period');
+                    periodTime.classList.add('current-period');
+                } else if (nextPeriod && nextPeriod.name === period.name) {
+                    periodName.classList.add('next-period');
+                    periodTime.classList.add('next-period');
+                }
+                
+                scheduleGrid.appendChild(periodName);
+                scheduleGrid.appendChild(periodTime);
+            });
+        }
+
+        function updateProgressBar(remainingSeconds, totalSeconds) {
+            const progressCircle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * 140; // radius = 140
+            
+            // Set up the circle stroke
+            progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+            
+            if (totalSeconds === 0 || remainingSeconds < 0) {
+                progressCircle.style.strokeDashoffset = circumference;
+                return;
+            }
+            
+            // Calculate progress: how much time has elapsed (0 to 1)
+            const elapsedSeconds = totalSeconds - remainingSeconds;
+            const progress = Math.max(0, Math.min(1, elapsedSeconds / totalSeconds));
+            
+            // Calculate offset: 0 progress = full offset (hidden), 1 progress = no offset (fully visible)
+            const offset = circumference * (1 - progress);
+            
+            progressCircle.style.strokeDashoffset = offset;
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const currentDay = getCurrentDay();
+            const currentTime = getCurrentTime();
+            
+            const timerElement = document.getElementById('timer');
+            const statusElement = document.getElementById('status');
+            const periodNameElement = document.getElementById('periodName');
+
+            // Check if it's a school day
+            if (!schedules[currentDay]) {
+                // Show countdown to next school day
+                const timeUntilNextSchool = getTimeUntilNextSchoolDay();
+                const nextSchoolDay = getNextSchoolDay();
+                
+                if (timeUntilNextSchool && nextSchoolDay) {
+                    timerElement.textContent = formatDuration(timeUntilNextSchool);
+                    statusElement.textContent = `Next school day (${nextSchoolDay.name.charAt(0).toUpperCase() + nextSchoolDay.name.slice(1)}) starts in:`;
+                    periodNameElement.textContent = 'Weekend/Holiday';
+                    
+                    // Use time since school ended as the progress base
+                    const timeSinceSchoolEnded = getTimeSinceSchoolEnded();
+                    if (timeSinceSchoolEnded) {
+                        const totalTimeBetweenSchool = timeSinceSchoolEnded + timeUntilNextSchool;
+                        updateProgressBar(timeSinceSchoolEnded, totalTimeBetweenSchool);
+                    } else {
+                        updateProgressBar(0, 0);
+                    }
+                } else {
+                    timerElement.textContent = '--:--:--';
+                    statusElement.textContent = 'No school today!';
+                    periodNameElement.textContent = 'No School';
+                    updateProgressBar(0, 0);
+                }
+                updateScheduleDisplay(currentDay, null, null);
+                return;
+            }
+
+            const todaySchedule = schedules[currentDay];
+            let currentPeriod = null;
+            let nextPeriod = null;
+            let timeUntilNext = 0;
+            let totalPeriodTime = 0;
+
+            // Check if we're currently in a period
+            for (let period of todaySchedule.periods) {
+                const startTime = parseTime(period.start);
+                const endTime = parseTime(period.end);
+
+                if (currentTime >= startTime && currentTime < endTime) {
+                    currentPeriod = period;
+                    const endTimeInSeconds = endTime * 60;
+                    const currentTimeInSeconds = currentTime * 60 + now.getSeconds();
+                    timeUntilNext = endTimeInSeconds - currentTimeInSeconds;
+                    totalPeriodTime = (endTime - startTime) * 60;
+                    break;
+                }
+            }
+
+            // If not in a period, find the next one
+            if (!currentPeriod) {
+                for (let period of todaySchedule.periods) {
+                    const startTime = parseTime(period.start);
+                    
+                    if (currentTime < startTime) {
+                        nextPeriod = period;
+                        const startTimeInSeconds = startTime * 60;
+                        const currentTimeInSeconds = currentTime * 60 + now.getSeconds();
+                        timeUntilNext = startTimeInSeconds - currentTimeInSeconds;
+                        
+                        // For breaks, calculate total break time
+                        let breakStartTime = startTimeInSeconds;
+                        for (let i = todaySchedule.periods.indexOf(period) - 1; i >= 0; i--) {
+                            const prevPeriod = todaySchedule.periods[i];
+                            const prevEndTime = parseTime(prevPeriod.end) * 60;
+                            if (currentTimeInSeconds >= prevEndTime) {
+                                breakStartTime = prevEndTime;
+                                break;
+                            }
+                        }
+                        totalPeriodTime = startTimeInSeconds - breakStartTime;
+                        break;
+                    }
+                }
+            }
+
+            // Display the appropriate message and countdown
+            if (currentPeriod) {
+                statusElement.textContent = `Time remaining in:`;
+                periodNameElement.textContent = currentPeriod.name;
+                timerElement.textContent = formatDuration(timeUntilNext);
+                updateProgressBar(timeUntilNext, totalPeriodTime);
+            } else if (nextPeriod) {
+                if (currentTime < parseTime(todaySchedule.periods[0].start)) {
+                    statusElement.textContent = `School starts in:`;
+                    periodNameElement.textContent = 'Before School';
+                } else {
+                    statusElement.textContent = `Next period starts in:`;
+                    periodNameElement.textContent = nextPeriod.name;
+                }
+                timerElement.textContent = formatDuration(timeUntilNext);
+                updateProgressBar(timeUntilNext, totalPeriodTime);
+            } else {
+                // School is over for the day - show countdown to next school day
+                const timeUntilNextSchool = getTimeUntilNextSchoolDay();
+                const nextSchoolDay = getNextSchoolDay();
+                
+                if (timeUntilNextSchool && nextSchoolDay) {
+                    timerElement.textContent = formatDuration(timeUntilNextSchool);
+                    statusElement.textContent = `Next school day (${nextSchoolDay.name.charAt(0).toUpperCase() + nextSchoolDay.name.slice(1)}) starts in:`;
+                    periodNameElement.textContent = 'Day Complete';
+                    
+                    // Use time since school ended as the progress base
+                    const timeSinceSchoolEnded = getTimeSinceSchoolEnded();
+                    if (timeSinceSchoolEnded) {
+                        const totalTimeBetweenSchool = timeSinceSchoolEnded + timeUntilNextSchool;
+                        updateProgressBar(timeSinceSchoolEnded, totalTimeBetweenSchool);
+                    } else {
+                        updateProgressBar(0, 0);
+                    }
+                } else {
+                    timerElement.textContent = '--:--:--';
+                    statusElement.textContent = 'School is over for today!';
+                    periodNameElement.textContent = 'Day Complete';
+                    updateProgressBar(0, 0);
+                }
+            }
+
+            updateScheduleDisplay(currentDay, currentPeriod, nextPeriod);
+        }
+
+        // Update every second
+        setInterval(updateTimer, 1000);
+        updateTimer(); // Initial call
+    </script>
 </body>
 </html>
